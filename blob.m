@@ -1,7 +1,7 @@
 function [count,x,y,width,height] =  blob(FilteredImage)
     [L num]=bwlabel(FilteredImage);
-    FRAME_MINY = 0.02;
-    FRAME_MINX = 0.02;
+    FRAME_MINY = 0.09;
+    FRAME_MINX = 0.09;
     FRAME_MAXY = 0.45;
     FRAME_MAXX = 0.45;
 

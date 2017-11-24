@@ -112,9 +112,9 @@ function [positions, time,frame] = trackermulti(fullfilename,  ...
 		if resize_image,
 			im = imresize(im, 0.5);
         end
-%         if frame ~= 1,
-%             issame = psnr(im,imtut) > 80;%max(abs(im(:)-imtut(:))) > 50;%
-%         end
+        if frame ~= 1,
+            issame = psnr(im,imtut) > 40;%max(abs(im(:)-imtut(:))) > 50;%
+        end
         if issame == 0,
             tic()
             for i = 1:count
