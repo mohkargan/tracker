@@ -153,17 +153,14 @@ function [positions, time,frame] = trackermulti(pathname,filename,  ...
                 forcount = forcount + 1;
             end
         end
-        if count ~=0,
-            poscount = tempposcount(1:tempcount);
-            target_sz = temptarget_sz(1:tempcount,:);
-            pos = temppos(1:tempcount,:);
-            window_sz = tempwindow_sz(1:tempcount,:);
-            count = tempcount;
-        end
+        poscount = tempposcount(1:tempcount);
+        target_sz = temptarget_sz;%(1:(end-forcount+2),:);
+        pos = temppos;%(1:(end-forcount+2),:);
+        window_sz = tempwindow_sz;%(1:(end-forcount+2),:);
+        count = tempcount;
         %% eger takip edilecek bisey kalmad?ysa okumay? b?rak
         if count == 0,
             disp('Takip edilecek hareketli cisim bulunamad?/kalmad?.')
-            close all;
             break;
         end
 		%load image
@@ -264,8 +261,8 @@ function [positions, time,frame] = trackermulti(pathname,filename,  ...
         imtut = im;
     end
     frame = frame - 1;
-% 	if resize_image,
-% 		positions = positions * 2;
-% 	end
+	if resize_image,
+		positions = positions * 2;
+	end
 end
 

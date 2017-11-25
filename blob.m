@@ -1,7 +1,10 @@
 function [count,x,y,width,height] =  blob(FilteredImage)
     [L num]=bwlabel(FilteredImage);
-    FRAME_MINY = 0.09;
-    FRAME_MINX = 0.09;
+    %min degerler olarak 0.06 secersek ufak arac golgelerini de alabilir,
+    %eger 0.07 al?rsak ufak golgeler suzgeclenebilir, eger 0.09 al?rsak tek
+    %tek gecen insanlar da sucgeclenebilir
+    FRAME_MINY = 0.07;
+    FRAME_MINX = 0.07;
     FRAME_MAXY = 0.45;
     FRAME_MAXX = 0.45;
 
@@ -68,7 +71,7 @@ function [count,x,y,width,height] =  blob(FilteredImage)
         end
     end
 %     hold off;
-    if count == 0
+    if count == 1
         x = 0;
         y = 0;
         width = 0;
