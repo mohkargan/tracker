@@ -1,6 +1,8 @@
-function [positions, time,frame] = trackermulti(pathname,filename,  ...
-	padding, kernel, lambda, output_sigma_factor, interp_factor, cell_size, ...
-	features)
+% MultiTracker with Regularly Checked Optical Flow
+function [time,frame] = MTwRCOF(pathname,filename,  ...
+	padding, kernel, lambda, output_sigma_factor, interp_factor,...
+    cell_size, features)
+
     fullfilename = fullfile(pathname,filename);
 
     vidReader = VideoReader(fullfilename);
@@ -10,45 +12,11 @@ function [positions, time,frame] = trackermulti(pathname,filename,  ...
     save_path = sprintf('%s%s%s/',pathname,'/frames_',filename);
     mkdir(save_path);
     
-    %% elle seçme
-%     im = readFrame(vidReader);
-%     imshow(im);
-%     rect = getrect;
-%     target_sz = [rect(4), rect(3)];
-%  	pos = [rect(2), rect(1)] + floor(target_sz/2);
-    %% optical flow ile otomatik seçme
-        %% without ofmod func
-
-%     opticFlow = opticalFlowHS;
-%     im = readFrame(vidReader);
-%     frameGray = rgb2gray(im);
-    
-%     flow = estimateFlow(opticFlow,frameGray); 
-% 
-%     im = readFrame(vidReader);
-%     frameGray = rgb2gray(im);
-%     flow = estimateFlow(opticFlow,frameGray); 
-% 
-%     fm = flow.Magnitude;
-%     bfm = fm > 0.01;
-%     frameMedian = medfilt2(bfm);        % median filter
-%     %%original image için yeni degerler uygulanmali, 480x640 için 15 iyi
-%     se = strel('disk',45);
-%     closeBW = imclose(frameMedian,se);  % morphological close
-%     
-%     se1 = strel('line',11,90);
-%     erodedBW = imerode(closeBW,se1);    % erode
-%     [count,x,y,width,height] = blob(erodedBW);
-%     count = count - 1;
-    
+    %% optical flow ile otomatik seçme   
         %% with ofmod func
     opticFlow = opticalFlowHS;
     im1 = readFrame(vidReader);
     frameGray1 = rgb2gray(im1);
-%     im2 = readFrame(vidReader);
-%     frameGray2 = rgb2gray(im2); 
-%     im3 = readFrame(vidReader);
-%     frameGray3 = rgb2gray(im3);
     im = readFrame(vidReader);
     whilecount = 0;
     while psnr(im,im1) > 40;
@@ -66,18 +34,7 @@ function [positions, time,frame] = trackermulti(pathname,filename,  ...
         target_sz(i,:) = [width(i), height(i)];
         pos(i,:) = [x(i), y(i)]+ floor(target_sz(i,:)/2);%merkez
     end
-%% devam
-%     imshow(im)
-%     hold on;
-%     for i = 1:count        
-%         rectangle('Position',[pos(i,2) - floor(target_sz(i,2)/2),pos(i,1) - floor(target_sz(i,1)/2),...
-%                         target_sz(i,2), target_sz(i,1)],'EdgeColor','r');
-%     end
-%     hold off;
-
-%     pos = [pos(:,2) pos(:,1)];
-%     target_sz = [target_sz(:,2) target_sz(:,1)];
-
+    
     resize_image = 0;
     for i=1:count
         if (sqrt(prod(target_sz)) >= 100) == 1
@@ -106,13 +63,13 @@ function [positions, time,frame] = trackermulti(pathname,filename,  ...
         %store pre-computed cosine window
         cos_window{i} = hann(size(yf{i},1)) * hann(size(yf{i},2))';		
     end
-	%note: variables ending with 'f' are in the Fourier domain.
 
 	time = 0;  %to calculate FPS
 
-	positions = zeros(count,framecount, 2);  %to calculate precision
+	positions = zeros(count,framecount, 2);  
     frame = 1;
     issame = 0;
+    init = 1;
     
     patch = cell(count,1);
     zf = cell(count,1);
@@ -133,7 +90,7 @@ function [positions, time,frame] = trackermulti(pathname,filename,  ...
         temppos = pos;
         tempwindow_sz = window_sz;
         for i = 1:count,
-            if (poscount(i)>20),
+            if (poscount(i)>9),
                 tempcount = tempcount - 1;
                 patch(i,:) = [];
                 zf(i,:) = [];
@@ -161,29 +118,106 @@ function [positions, time,frame] = trackermulti(pathname,filename,  ...
             count = tempcount;
         end
         %% eger takip edilecek bisey kalmad?ysa okumay? b?rak
-        if count == 0,
-            disp('Takip edilecek hareketli cisim bulunamad?/kalmad?.')
-            close all;
-            break;
-        end
-		%load image
-        if frame ~= 1,
+%         if count == 0,
+%             disp('Takip edilecek hareketli cisim bulunamad?/kalmad?.')
+%             close all;
+%             break;
+%         end
+		%% load image
+        if init  == 0,
             im = readFrame(vidReader);
         end
-		if size(im,3) > 1,
+        %% of buraya
+        if mod(frame,10) == 0,
+
+            im = readFrame(vidReader);
+            if size(im,3) > 1,
+                im = rgb2gray(im);
+            end
+            if resize_image,
+                im = imresize(im, 0.5);
+            end
+            while psnr(im,imtut) > 40;
+                im = readFrame(vidReader);
+                if size(im,3) > 1,
+                    im = rgb2gray(im);
+                end
+                if resize_image,
+                    im = imresize(im, 0.5);
+                end
+            end
+            opticFlow = opticalFlowHS;
+            [count,x,y,width,height] = ofmod(opticFlow,imtut, im);
+    
+            %% merkezi ve pencere buyuklugunu belirle
+            target_sz= zeros(count,2);
+            pos = zeros(count,2);
+            for i=1:count
+                target_sz(i,:) = [width(i), height(i)];
+                pos(i,:) = [x(i), y(i)]+ floor(target_sz(i,:)/2);%merkez
+            end
+%             imshow(im)
+%             hold on;
+%             for i = 1:count        
+%                 rectangle('Position',[pos(i,2) - floor(target_sz(i,2)/2),pos(i,1) - floor(target_sz(i,1)/2),...
+%                         target_sz(i,2), target_sz(i,1)],'EdgeColor','r');
+%             end
+%             hold off;
+
+  
+%             if ~resize_image,
+%                 pos = (pos * 2);
+%                 target_sz = (target_sz * 2);
+%             end
+    
+            window_sz = zeros(count,2);
+            yf = cell(count,1);
+            cos_window = cell(count,1);
+            for i=1:count
+                %window size, taking padding into account
+                window_sz(i,:) = floor(target_sz(i) * (1 + padding));
+
+                %create regression labels, gaussian shaped, with a bandwidth
+                %proportional to target size
+                output_sigma = sqrt(prod(target_sz(i,:))) * output_sigma_factor / cell_size;
+                yf{i} = fft2(gaussian_shaped_labels(output_sigma, floor(window_sz(i,:) / cell_size)));
+
+                %store pre-computed cosine window
+                cos_window{i} = hann(size(yf{i},1)) * hann(size(yf{i},2))';		
+            end
+
+            positions = zeros(count,framecount, 2);  
+            issame = 0;
+            init = 1;
+    
+            patch = cell(count,1);
+            zf = cell(count,1);
+            kzf = cell(count,1);
+            model_xf = cell(count,1);
+            kf = cell(count,1);
+            xf = cell(count,1);
+            alphaf = cell(count,1);
+            model_alphaf = cell(count,1);
+            poscount = zeros(count,1);   
+            imtut = im;
+        end
+        %%
+		if (size(im,3) > 1) && mod(frame,10) ~= 0,
 			im = rgb2gray(im);
 		end
-		if resize_image,
+		if resize_image && mod(frame,10) ~= 0,
 			im = imresize(im, 0.5);
         end
-        if frame ~= 1,
+        if init  == 0 && mod(frame,10) ~= 0,
             issame = psnr(im,imtut) > 40;%max(abs(im(:)-imtut(:))) > 50;%
+        elseif mod(frame,10) == 0,
+            issame = 0;
         end
         
         if issame == 0,
             tic()
             for i = 1:count
-                if frame > 1,
+                if init  == 0,
                     %obtain a subwindow for detection at the position from last
                     %frame, and convert to Fourier domain (its size is unchanged)
                     patch{i} = get_subwindow(im, pos(i,:), window_sz(i,:));
@@ -213,18 +247,6 @@ function [positions, time,frame] = trackermulti(pathname,filename,  ...
                         horiz_delta = horiz_delta - size(zf{i},2);
                     end                   
                     pos(i,:) = pos(i,:) + cell_size * [vert_delta - 1, horiz_delta - 1];
-                    %% target size denemesi
-%                     if vert_delta ~= 1 && horiz_delta ~= 1,
-%                         [vert_area, horiz_area] = find(response > 0.85*max(response(:)));
-%                         for j=1:size(vert_area,1)
-%                             if vert_area(j) > size(zf{i},1) / 2,  %wrap around to negative half-space of vertical axis
-%                                 vert_area(j) = vert_area(j) - size(zf{i},1);
-%                             end
-%                             if horiz_area(j) > size(zf{i},2) / 2,  %same for horizontal axis
-%                                 horiz_area(j) = horiz_area(j) - size(zf{i},2);
-%                             end 
-%                         end
-%                     end
                 end
 
                 %obtain a subwindow for training at newly estimated target position
@@ -242,7 +264,7 @@ function [positions, time,frame] = trackermulti(pathname,filename,  ...
                 end
                 alphaf{i} = yf{i} ./ (kf{i} + lambda);   %equation for fast training
 
-                if frame == 1,  %first frame, train with a single image
+                if init  == 1,  %first frame, train with a single image
                     model_alphaf{i} = alphaf{i};
                     model_xf{i} = xf{i};
                 else
@@ -253,7 +275,7 @@ function [positions, time,frame] = trackermulti(pathname,filename,  ...
 
                 %save position and timing
                 positions(i,frame,:) = pos(i,:);
-                if frame > 1,
+                if init  == 0,
                     if positions(i,frame,:) == positions(i,frame-1,:),
                         poscount(i) = poscount(i) + 1;
                     else
@@ -262,23 +284,29 @@ function [positions, time,frame] = trackermulti(pathname,filename,  ...
                 end
             end
             time = time + toc();
+            %rect = [pos(:,1) - floor(target_sz(:,1)/2),pos(:,2) - floor(target_sz(:,2)/2),target_sz(:,1), target_sz(:,2)];
+            rects = [pos(:,2) - floor(target_sz(:,2)/2),pos(:,1) - floor(target_sz(:,1)/2),target_sz(:,2), target_sz(:,1)];
+%             im_save = insertShape(im,'Rectangle',rect,'Color','green');
+            im_save = insertRect(im,rects,0);
             %visualization
-            imshow(im);
-            hold on;
-            for i = 1:count
-            	rectangle('Position',[pos(i,2) - floor(target_sz(i,2)/2),pos(i,1) - floor(target_sz(i,1)/2),...
-                        target_sz(i,2), target_sz(i,1)],'EdgeColor','r');
-            end
-            hold off;
+%             rect = [pos(:,1) - floor(target_sz(:,1)/2),pos(:,2) - floor(target_sz(:,2)/2),target_sz(:,1), target_sz(:,2)];
+%             imshow(im);
+%             hold on;
+%             for i = 1:count
+% %             	rectangle('Position',[pos(i,2) - floor(target_sz(i,2)/2),pos(i,1) - floor(target_sz(i,1)/2),...
+% %                         target_sz(i,2), target_sz(i,1)],'EdgeColor','r');
+%             end
+%             hold off;
+            imshow(im_save)
             str = sprintf('%s%d%s',save_path,frame,'.jpg');
-            saveas(gcf,str);
+            imwrite(im_save,str);
+%             saveas(gcf,str);
+            disp(frame);
             frame = frame + 1;
+            init = 0;
         end
         imtut = im;
     end
     frame = frame - 1;
-% 	if resize_image,
-% 		positions = positions * 2;
-% 	end
 end
 
