@@ -50,12 +50,13 @@ end
 
 assert(any(strcmp(kernel_type, {'linear', 'polynomial', 'gaussian'})), 'Unknown kernel.')
     
-[filename, pathname] = uigetfile( ...
-   {'*.avi;*.mpg;*.mpeg;*.mp4;*.mkv','Video Files (*.avi,*.mpg,*.mpeg,*.mp4,*.mkv)';
-     '*.*',  'All Files (*.*)'}, ...
-     'Select a video file');
+% [filename, pathname] = uigetfile( ...
+%    {'*.avi;*.mpg;*.mpeg;*.mp4;*.mkv','Video Files (*.avi,*.mpg,*.mpeg,*.mp4,*.mkv)';
+%      '*.*',  'All Files (*.*)'}, ...
+%      'Select a video file');
 
-
+filename = 'MVI_3159.mp4';
+pathname = 'C:\Users\mohkargan\Desktop\best\video\itü\';
 
 %call tracker function with all the relevant parameters
 [time,framecount] = MTwRCOF(pathname,filename, ...
