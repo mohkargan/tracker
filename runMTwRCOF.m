@@ -6,6 +6,7 @@
 
 close all;  clear all; clc;
 
+
 kernel_type = 'gaussian';
 
 feature_type = 'hog';
@@ -58,10 +59,13 @@ assert(any(strcmp(kernel_type, {'linear', 'polynomial', 'gaussian'})), 'Unknown 
 filename = 'MVI_3159.mp4';
 pathname = 'C:\Users\mohkargan\Desktop\best\video\itü\';
 
+defaultroi = 1;
+isIP = 0;
+start_time = 9.5;
 %call tracker function with all the relevant parameters
 [time,framecount] = MTwRCOF(pathname,filename, ...
 			padding, kernel, lambda, output_sigma_factor, interp_factor, ...
-			cell_size, features);
+			cell_size, features, defaultroi, start_time, isIP);
 		
 %calculate frames-per-second
 fps = framecount / time;

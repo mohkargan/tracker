@@ -1,7 +1,7 @@
 % MultiTracker with Regularly Checked Optical Flow
 function [time,frame] = MTwRCOF(pathname,filename,  ...
 	padding, kernel, lambda, output_sigma_factor, interp_factor,...
-    cell_size, features, defaultroi, start_time, isIP)
+    cell_size, features, defaultroi,start_time,isIP)
 
     %% open video file
     fullfilename = fullfile(pathname,filename);
@@ -19,15 +19,12 @@ function [time,frame] = MTwRCOF(pathname,filename,  ...
     if defaultroi == 1
         roistruct = load('MVI_mask.mat','-mat');
         roi = roistruct.BW;
-    else
-        %kullanýcýnýn alaný sol ile seçip, birleþtirip en son alana sað
-        %týklatýp "create mask" demesi gerekmektedir
-        roi = roipoly(I);
+    % else olunca roi seçilecek burada
     end
     
     %% set saving path according to folder of video, correlation, features and
-    filename_noext = strtok(filename,'.'); %filename without extention
-    save_path = sprintf('%s%s%s',pathname,'frames_',filename_noext);
+    filename_noext = strtok(filename,'.');
+    save_path = sprintf('%s%s%s',pathname,'\\frames_',filename_noext);
     
     save_path = strcat(save_path,'_',kernel.type,'_');
     
@@ -38,9 +35,9 @@ function [time,frame] = MTwRCOF(pathname,filename,  ...
     end
     
     if defaultroi == 1
-        save_path = strcat(save_path,'_defroi\'); %default roi
+        save_path = strcat(save_path,'_defroi'); %default roi
     else
-        save_path = strcat(save_path,'_userroi\'); % user selected roi
+        save_path = strcat(save_path,'_userroi'); % user selected roi
     end
         
     mkdir(save_path);

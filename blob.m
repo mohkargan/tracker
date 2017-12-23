@@ -6,8 +6,8 @@ function [count,x,y,width,height] =  blob(FilteredImage)
     [image_x,image_y] = size(FilteredImage);
 
     if (image_x == 540 && image_y == 960) || (image_x == 1080 && image_y) == 1920,
-        FRAME_MINY = 0.07;
-        FRAME_MINX = 0.07;
+        FRAME_MINY = 0.05;
+        FRAME_MINX = 0.05;
     else
         FRAME_MINY = 0.03;
         FRAME_MINX = 0.03;
