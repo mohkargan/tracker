@@ -1,7 +1,7 @@
 % MultiTracker with Regularly Checked Optical Flow
 function [time,frame] = MTwRCOF(pathname,filename,  ...
 	padding, kernel, lambda, output_sigma_factor, interp_factor,...
-    cell_size, features, defaultroi, start_time, isIP)
+    cell_size, features, defaultroi, start_time, isIP, opticalFlow)
 
     %% open video file
     fullfilename = fullfile(pathname,filename);
@@ -46,7 +46,11 @@ function [time,frame] = MTwRCOF(pathname,filename,  ...
     mkdir(save_path);
 
     %% optical flow ile otomatik seçme   
-    opticFlow = opticalFlowHS;
+    if strcmp(opticalFlow.type,'Lucas-Kanade')
+        opticFlow = opticalFlowLK('NoiseThreshold',opticalFlow.noiseThreshold);
+    else %if strcmp(opticalFlow.type,'Horn-Schunck')
+        opticFlow = opticalFlowHS('MaxIteration',opticalFlow.maxIteration,'Smoothness',opticalFlow.smoothness,1);
+    end
     im1 = readFrame(vidReader);
     frameGray1 = rgb2gray(im1);
     im = readFrame(vidReader);
@@ -155,11 +159,8 @@ function [time,frame] = MTwRCOF(pathname,filename,  ...
         temptarget_sz = target_sz;
         temppos = pos;
         tempwindow_sz = window_sz;
-        % geliþtirme gerekli, hatalý siliyor çünkü cell'den bir eleman
-        % silince sýralar toptan kayýyor
         for i = 1:count,
             if (poscount(i)>del_interval),
- 
                 patch(i-(count-tempcount),:) = [];
                 zf(i-(count-tempcount),:) = [];
                 kzf(i-(count-tempcount),:) = [];
@@ -211,7 +212,11 @@ function [time,frame] = MTwRCOF(pathname,filename,  ...
                     end
                 end
             end
-            opticFlow = opticalFlowHS;
+            if strcmp(opticalFlow.type,'Lucas-Kanade')
+                opticFlow = opticalFlowLK('NoiseThreshold',opticalFlow.noise_threshold);
+            elseif strcmp(opticalFlow.type,'Lucas-Kanade')
+                opticFlow = opticalFlowHS('MaxIteration',opticalFlow.maxIteration,'Smoothness',opticalFlow.smoothness,0);
+            end
             [count,x,y,width,height] = ofmod(opticFlow,imtut, im);
 
             %% check if is in roi ROI 
