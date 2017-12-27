@@ -58,13 +58,15 @@ handles.output = hObject;
  handles.filename = '';
  handles.pathname = '';
  handles.padding ='';
- handles.lamda = '';
+ handles.lambda = '';
  handles.output_sigma_factor = '';
  handles.defaultROI = '';
  handles.isIP = '';
  handles.opticalFlow = '';
  handles.kernel = '';
  handles.features = '';
+ handles.cell_size = '';
+ handles.sent_info = 0;
 % Update handles structure
 guidata(hObject, handles);
 
@@ -78,11 +80,10 @@ function varargout = settings_OutputFcn(hObject, eventdata, handles)
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-%handles.output =[handles.padding, handles.lamda, handles.output_sigma_factor, handles.defaultROI, handles.isIP, handles.opticalFlow, handles.kernel, handles.pathname, handles.filename];
 
 % Get default command line output from handles structure
 varargout{1} = handles.padding;   
-varargout{2} = handles.lamda;
+varargout{2} = handles.lambda;
 varargout{3} = handles.output_sigma_factor;
 varargout{4} = handles.defaultROI;
 varargout{5} = handles.isIP;
@@ -90,7 +91,8 @@ varargout{6} = handles.opticalFlow;
 varargout{7} = handles.kernel;
 varargout{8} = handles.pathname;
 varargout{9} = handles.filename;
-
+varargout{10} = handles.features;
+varargout{11} = handles.cell_size;
 delete(handles.figure1);
 
 
@@ -915,13 +917,16 @@ if errorFlag
     msgbox(errorString, 'Error','error');
 else
     handles.padding = padding;
-    handles.lamda = lambda;
+    handles.lambda = lambda;
     handles.output_sigma_factor = output_sigma_factor;
     handles.defaultROI = defaultROI;
     handles.isIP = isIP;
     handles.opticalFlow = opticalFlow;
     handles.kernel = kernel;
     handles.features = features;
+    handles.cell_size = cell_size;
+     handles.sent_info = 1;
+
     msgbox('Data is written, you can exit!', 'Successful','warn');
 end
 guidata(hObject,handles);
@@ -933,7 +938,13 @@ function figure1_CloseRequestFcn(hObject, eventdata, handles)
 % hObject    handle to figure1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+ if ~handles.sent_info
+    button = questdlg('You have not sent the settings information. This can cause some errors. Are you sre to exit?','Warning','Exit','Return to settings','Return to settings');
+    if strcmp(button,'Return to settings')
+        return;
+    end
+ end
+ 
 % Hint: delete(hObject) closes the figure
 if isequal(get(hObject, 'waitstatus'), 'waiting')
     uiresume(hObject);

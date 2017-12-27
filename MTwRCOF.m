@@ -22,7 +22,9 @@ function [time,frame] = MTwRCOF(pathname,filename,  ...
     else
         %kullanýcýnýn alaný sol ile seçip, birleþtirip en son alana sað
         %týklatýp "create mask" demesi gerekmektedir
-        roi = roipoly(I);
+        im = readFrame(vidReader);
+        im = imresize(im,0.5);
+        roi = roipoly(im);
     end
     
     %% set saving path according to folder of video, correlation, features and
@@ -49,7 +51,7 @@ function [time,frame] = MTwRCOF(pathname,filename,  ...
     if strcmp(opticalFlow.type,'Lucas-Kanade')
         opticFlow = opticalFlowLK('NoiseThreshold',opticalFlow.noiseThreshold);
     else %if strcmp(opticalFlow.type,'Horn-Schunck')
-        opticFlow = opticalFlowHS('MaxIteration',opticalFlow.maxIteration,'Smoothness',opticalFlow.smoothness,1);
+        opticFlow = opticalFlowHS('MaxIteration',10,'Smoothness',1);
     end
     im1 = readFrame(vidReader);
     frameGray1 = rgb2gray(im1);

@@ -59,7 +59,7 @@ assert(any(strcmp(kernel_type, {'linear', 'polynomial', 'gaussian'})), 'Unknown 
 filename = 'MVI_3159.mp4';
 pathname = 'C:\Users\mohkargan\Desktop\best\video\itü\';
 
-defaultroi = 1;
+defaultroi = 0;
 isIP = 0;
 start_time = 9.5;
 
