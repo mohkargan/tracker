@@ -820,7 +820,7 @@ if kerneltype == 1
     kernel.interp_factor = str2double(get(handles.edit_gauss_interp,'String'));
     cell_size = str2double(get(handles.edit_gauss_cell,'String'));
 elseif kerneltype == 2
-    kernel.type = 'gaussian';
+    kernel.type = 'polynomial';
     kernel.poly_a = str2double(get(handles.edit_poly_a,'String'));
 	kernel.poly_b = str2double(get(handles.edit_poly_b,'String'));
     kernel.interp_factor = str2double(get(handles.edit_poly_interp,'String'));
@@ -881,21 +881,23 @@ if featuretype == 1
     end
 end
 
-if isnan(kernel.interp_factor)
-    errorFlag = true;
-    errorString = strcat(errorString,' Sigma ');
-end
-   
-if isnan(cell_size)
-    errorFlag = true;
-    errorString = strcat(errorString,' Cell size ');
-end
 
 if kerneltype == 1
     if isnan(kernel.sigma)
         errorFlag = true;
         errorString = strcat(errorString,' Sigma ');
     end
+    
+    if isnan(kernel.interp_factor)
+        errorFlag = true;
+        errorString = strcat(errorString,' Sigma ');
+    end
+
+    if isnan(cell_size)
+        errorFlag = true;
+        errorString = strcat(errorString,' Cell size ');
+    end
+    
 elseif kerneltype == 2
     if isnan(kernel.poly_a)
         errorFlag = true;
@@ -905,6 +907,17 @@ elseif kerneltype == 2
         errorFlag = true;
         errorString = strcat(errorString,' Exponent ');
     end    
+    
+    if isnan(kernel.interp_factor)
+        errorFlag = true;
+        errorString = strcat(errorString,' Sigma ');
+    end
+
+    if isnan(cell_size)
+        errorFlag = true;
+        errorString = strcat(errorString,' Cell size ');
+    end
+    
 end
 
 if strcmp(handles.filename,'') || strcmp(handles.pathname,'')
@@ -924,7 +937,9 @@ else
     handles.opticalFlow = opticalFlow;
     handles.kernel = kernel;
     handles.features = features;
-    handles.cell_size = cell_size;
+    if ~strcmp(kernel.type,'linear')
+        handles.cell_size = cell_size;
+    end
      handles.sent_info = 1;
 
     msgbox('Data is written, you can exit!', 'Successful','warn');

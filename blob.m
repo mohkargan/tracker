@@ -29,6 +29,28 @@ function [count,x,y,width,height] =  blob(FilteredImage)
     elseif image_x == 120 && image_y == 213,
         min_area = 40;
     end
+    
+%     [Bf,Lf,Nf,Af] = bwboundaries(L);
+%         
+%    figure
+%     imshow(L);
+% 
+%     hold on;
+%     for k=1:length(Bf),
+% 
+%         if(~sum(Af(k,:)))
+%             boundary = Bf{k};
+%             plot(boundary(:,2), boundary(:,1), 'r','LineWidth',2);
+% 
+%             for l=find(Af(:,k))'
+%                 boundary = Bf{l};
+%                 plot(boundary(:,2), boundary(:,1), 'g','LineWidth',2);
+%             end
+% 
+%         end
+% 
+%     end
+    
     STATS=regionprops(L,'all');
     removed=0;
 %     Remove the noisy regions
@@ -46,8 +68,32 @@ function [count,x,y,width,height] =  blob(FilteredImage)
     %L2 = L;
     [B,L,N,A] = bwboundaries(L2);
     
+       
+    %Display results
+%     figure
+%     imshow(L2);
+%     %subplot 211,  imshow(L2);%title('BackGround Detected');
+%    % subplot 212,  imshow(L2);%title('Blob Detected');
+% 
+%     hold on;
+%     for k=1:length(B),
+% 
+%         if(~sum(A(k,:)))
+%             boundary = B{k};
+%             plot(boundary(:,2), boundary(:,1), 'r','LineWidth',2);
+% 
+%             for l=find(A(:,k))'
+%                 boundary = B{l};
+%                 plot(boundary(:,2), boundary(:,1), 'g','LineWidth',2);
+%             end
+% 
+%         end
+% 
+%     end
+    
+    
     count = 1;
-
+%     figure
 %     imshow(L2);
 %     hold on;
     for i = 1:length(B)
@@ -73,10 +119,5 @@ function [count,x,y,width,height] =  blob(FilteredImage)
         y = 0;
         width = 0;
         height = 0;
-%     else
-%         x = x(2:end);
-%         y = y(2:end);
-%         width = width(2:end);
-%         height = height(2:end);
     end
 end

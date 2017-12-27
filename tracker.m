@@ -103,11 +103,13 @@ handles.isIP, handles.opticalFlow, handles.kernel, handles.pathname, ...
 handles.filename, handles.features, handles.cell_size] = settings;
 if strcmp(handles.padding ,'') || strcmp(handles.lambda ,'') || strcmp(handles.output_sigma_factor ,'') || strcmp(handles.defaultROI ,'') ||...
  strcmp(handles.isIP ,'') || strcmp(handles.opticalFlow ,'') || strcmp(handles.kernel ,'') || strcmp(handles.pathname ,'') ||...
-  strcmp(handles.filename ,'') || strcmp(handles.features ,'') || strcmp(handles.cell_size ,'') 
+  strcmp(handles.filename ,'') || strcmp(handles.features ,'')  
 
+    if ~strcmp(handles.kernel.type, 'linear') || strcmp(handles.cell_size ,'')       
     msgbox('Setting info is inaccurate, Please set again!','Info Retrieval Error!','error');
     clearAll(hObject,handles);
     return;
+    end
 end
 set(handles.text_status,'String','Got the settings info!');
 set(handles.edit_video_start, 'Enable','on');
@@ -200,8 +202,10 @@ if isnan(start_time) || isnan(video_end)
     return;
 end
 if (start_time < 0) || (video_end > handles.video_duration) || (start_time > video_end)
-    msgbox('Please enter valid beginning and ending!', 'Error','error');
-    return;
+    if (video_end - handles.video_duration ) > 0.01
+        msgbox('Please enter valid beginning and ending!', 'Error','error');
+        return;
+    end
 end
 
 set(handles.pushbutton_play,'Enable','off');
@@ -219,8 +223,13 @@ padding = handles.padding;
 kernel = handles.kernel;
 lambda = handles.lambda;
 output_sigma_factor = handles.output_sigma_factor;
-interp_factor = handles.kernel.interp_factor;
-cell_size = handles.cell_size;
+if ~strcmp(kernel.type,'linear')
+    interp_factor = handles.kernel.interp_factor;
+    cell_size = handles.cell_size;
+else
+    cell_size = 1;
+    interp_factor = 0.02;
+end
 features = handles.features;
 defaultroi = handles.defaultROI;
 isIP = handles.isIP;
@@ -285,21 +294,30 @@ vidReader = handles.vidReader;
         end
     end
     if start_time == 0
-        video_path = strcat(video_path,'_beginto');
+        if write_video
+            video_path = strcat(video_path,'_beginto');
+        end
         save_path = strcat(save_path,'_beginto');
     else
-        video_path = sprintf('%s_%d%s',video_path,floor(start_time),'to');
+        if write_video
+            video_path = sprintf('%s_%d%s',video_path,floor(start_time),'to');
+        end
         save_path = sprintf('%s_%d%s',save_path,floor(start_time),'to');
     end
-    if video_end == vidReader.Duration
-        video_path = strcat(video_path,'end.mp4');
+    if abs(video_end - handles.video_duration ) < 0.01
+        if write_video
+            video_path = strcat(video_path,'end.mp4');
+        end
         save_path = strcat(save_path,'end\');
     else
-        video_path = sprintf('%s%d%s',video_path,floor(video_end),'.mp4');
+        if write_video
+            video_path = sprintf('%s%d%s',video_path,floor(video_end),'.mp4');
+        end
         save_path = sprintf('%s%d%s',save_path,floor(video_end),'\');
     end
-    video_path = fullfile(pathname,video_path);
-        
+    if write_video
+        video_path = fullfile(pathname,video_path);
+    end
     mkdir(save_path);
     time = 0;  %to calculate FPS
     tic()
@@ -352,7 +370,7 @@ vidReader = handles.vidReader;
         new_w = tempRects(:,3);
         new_h = tempRects(:,4);
         count = size(new_x,1);
-
+        
         target_sz= zeros(count,2);
         pos = zeros(count,2);
         for i=1:count
@@ -363,7 +381,20 @@ vidReader = handles.vidReader;
         target_sz = 0;
         pos = 0;
     end
-    
+    %% without bounding rect control
+%                    new_x = zeros(count,1); new_y = zeros(count,1); new_w = zeros(count,1); new_h = zeros(count,1);
+%                     for i = 1:count
+%                         new_x(i) = x(inroi(i));
+%                         new_y(i) = y(inroi(i));
+%                         new_w(i) = width(inroi(i));
+%                         new_h(i) = height(inroi(i));
+%                     end
+        target_sz= zeros(count,2);
+        pos = zeros(count,2);
+        for i=1:count
+            target_sz(i,:) = [new_w(i), new_h(i)];
+            pos(i,:) = [new_x(i), new_y(i)]+ floor(target_sz(i,:)/2);%merkez
+        end
     %% 
        
     if ~isempty(pos),
@@ -405,7 +436,7 @@ vidReader = handles.vidReader;
         poscount = zeros(count,1);
         peak_value = zeros(count,1);
     end
-
+    fID = fopen(strcat(save_path,'fps.txt'),'w');
 	while hasFrame(vidReader),
 
         if vidReader.CurrentTime > video_end || video_finish
@@ -414,34 +445,35 @@ vidReader = handles.vidReader;
         end
         set(handles.text_status,'String',sprintf('Processing the video: %.1f seconds',vidReader.CurrentTime));
         %% 20 frame boyunca ayni pozisyondaysa trackerdan sil
-        tempcount = count;
-        tempposcount = poscount;
-        forcount = 1;
-        temptarget_sz = target_sz;
-        temppos = pos;
-        tempwindow_sz = window_sz;
-        for i = 1:count,
-            if (poscount(i)>del_interval),
-                patch(i-(count-tempcount),:) = [];
-                zf(i-(count-tempcount),:) = [];
-                kzf(i-(count-tempcount),:) = [];
-                model_xf(i-(count-tempcount),:) = [];
-                kf(i-(count-tempcount),:) = [];
-                xf(i-(count-tempcount),:) = [];
-                alphaf(i-(count-tempcount),:) = [];
-                model_alphaf(i-(count-tempcount),:) = [];
-                yf(i-(count-tempcount),:) = [];
-                cos_window(i-(count-tempcount),:) = [];
-                tempcount = tempcount - 1;
-            else
-                tempposcount(forcount) = poscount(i);
-                temptarget_sz(forcount,:) = target_sz(i,:);
-                temppos(forcount,:) = pos(i,:);
-                tempwindow_sz(forcount,:) = window_sz(i,:);
-                forcount = forcount + 1;
-            end
-        end
         if count ~=0,
+            tempcount = count;
+            tempposcount = poscount;
+            forcount = 1;
+            temptarget_sz = target_sz;
+            temppos = pos;
+            tempwindow_sz = window_sz;
+            for i = 1:count,
+                if (poscount(i)>del_interval),
+                    patch(i-(count-tempcount),:) = [];
+                    zf(i-(count-tempcount),:) = [];
+                    kzf(i-(count-tempcount),:) = [];
+                    model_xf(i-(count-tempcount),:) = [];
+                    kf(i-(count-tempcount),:) = [];
+                    xf(i-(count-tempcount),:) = [];
+                    alphaf(i-(count-tempcount),:) = [];
+                    model_alphaf(i-(count-tempcount),:) = [];
+                    yf(i-(count-tempcount),:) = [];
+                    cos_window(i-(count-tempcount),:) = [];
+                    tempcount = tempcount - 1;
+                else
+                    tempposcount(forcount) = poscount(i);
+                    temptarget_sz(forcount,:) = target_sz(i,:);
+                    temppos(forcount,:) = pos(i,:);
+                    tempwindow_sz(forcount,:) = window_sz(i,:);
+                    forcount = forcount + 1;
+                end
+            end
+        
             poscount = tempposcount(1:tempcount);
             target_sz = temptarget_sz(1:tempcount,:);
             pos = temppos(1:tempcount,:);
@@ -474,7 +506,7 @@ vidReader = handles.vidReader;
                 end
             end
             if strcmp(opticalFlow.type,'Lucas-Kanade')
-                opticFlow = opticalFlowLK('NoiseThreshold',opticalFlow.noise_threshold);
+                opticFlow = opticalFlowLK('NoiseThreshold',opticalFlow.noiseThreshold);
             elseif strcmp(opticalFlow.type,'Lucas-Kanade')
                 opticFlow = opticalFlowHS('MaxIteration',opticalFlow.maxIteration,'Smoothness',opticalFlow.smoothness,0);
             end
@@ -514,6 +546,22 @@ vidReader = handles.vidReader;
                     pos(i,:) = [new_x(i), new_y(i)]+ floor(target_sz(i,:)/2);%merkez
                 end
 
+%                    %% without bounding rect control
+%                    new_x = zeros(count,1); new_y = zeros(count,1); new_w = zeros(count,1); new_h = zeros(count,1);
+%                     for i = 1:count
+%                         new_x(i) = x(inroi(i));
+%                         new_y(i) = y(inroi(i));
+%                         new_w(i) = width(inroi(i));
+%                         new_h(i) = height(inroi(i));
+%                     end
+                    
+                    target_sz= zeros(count,2);
+                    pos = zeros(count,2);
+                    for i=1:count
+                        target_sz(i,:) = [new_w(i), new_h(i)];
+                        pos(i,:) = [new_x(i), new_y(i)]+ floor(target_sz(i,:)/2);%merkez
+                    end
+                %%
                 window_sz = zeros(count,2);
                 yf = cell(count,1);
                 cos_window = cell(count,1);
@@ -654,17 +702,17 @@ vidReader = handles.vidReader;
         if write_frames || write_video
             imwrite(im_save,str);
         end
-        
+        fprintf(fID,'%d %d\n',frame,count);
         fprintf('frame:%d\n',frame);
         frame = frame + 1;
         init = 0;
         imtut = im;
-
+        
     end
     frame = frame - 1;
     set(handles.axes1,'Visible','off');
     set(handles.text_status,'String','Processing the video: Video Finished!');
-    fID = fopen(strcat(save_path,'fps.txt'),'w');
+
     fprintf(fID,'fps = %f',time/frame);
     fclose(fID);
     if write_video

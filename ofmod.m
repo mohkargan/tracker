@@ -21,10 +21,32 @@ function [count,x,y,width,height] = ofmod(opticFlow, frameGray1,frameGray2)
     elseif image_x == 120 && image_y == 213,
         disk_r = 5;
     end
-    se = strel('disk',disk_r);%high resolution için 45, dü?ük için 15
+    se = strel('disk',disk_r);
     closeBW = imclose(frameMedian,se);  % morphological close
     se1 = strel('line',11,90);
     erodedBW = imerode(closeBW,se1);    % erode
+            
+%         figure
+%         imshow(frameGray2)
+        
+%         figure
+%         imshow(frameGray2) 
+%         hold on
+%         plot(flow,'DecimationFactor',[5 5],'ScaleFactor',20)
+%         hold off
+%         
+%         figure
+%         imshow(bfm)
+%         
+%         figure
+%         imshow(frameMedian)
+%         
+%         figure
+%         imshow(closeBW)
+%         
+%         figure
+%         imshow(erodedBW)
+    
     [count,x,y,width,height] = blob(erodedBW);
     count = count - 1;
 end
