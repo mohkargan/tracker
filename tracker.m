@@ -282,6 +282,18 @@ vidReader = handles.vidReader;
         end
     end
     
+   if strcmp(opticalFlow.type,'Lucas-Kanade')
+        save_path = strcat(save_path,'_lk');
+        if write_video
+            video_path = strcat(video_path,'_lk');
+        end
+    else
+        save_path = strcat(save_path,'_hs');
+        if write_video
+            video_path = strcat(video_path,'_hs');
+        end
+    end
+    
     if defaultroi == 1
         save_path = strcat(save_path,'_defroi'); %default roi
         if write_video
